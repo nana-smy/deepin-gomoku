@@ -1,0 +1,16 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="qml/main.qml">src/qml/main.qml</file>
+        <file alias="qml/RoundButton.qml">src/qml/RoundButton.qml</file>
+        <file alias="qml/HomeScreen.qml">src/qml/HomeScreen.qml</file>
+        <file alias="qml/SelectColorScreen.qml">src/qml/SelectColorScreen.qml</file>
+        <file alias="qml/GameScreen.qml">src/qml/GameScreen.qml</file>
+        <file alias="qml/BoardCanvas.qml">src/qml/BoardCanvas.qml</file>
+        <file alias="qml/ResultPopup.qml">src/qml/ResultPopup.qml</file>
+        <!-- 字体与音效直接复用原仓库 gomoku/assets/resources 下的文件，避免重复 -->
+        <file alias="resources/font/ResourceHanRoundedCN-Bold.ttf">../gomoku/assets/resources/font/ResourceHanRoundedCN-Bold.ttf</file>
+        <file alias="resources/music/chessone.wav">../gomoku/assets/resources/music/chessone.wav</file>
+        <file alias="resources/music/win.wav">../gomoku/assets/resources/music/win.wav</file>
+        <file alias="resources/music/fail.wav">../gomoku/assets/resources/music/fail.wav</file>
+    </qresource>
+</RCC>
