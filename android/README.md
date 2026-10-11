@@ -55,7 +55,7 @@ android/
 qt-cmake -S android -B build \
   -DCMAKE_BUILD_TYPE=Release \
   -DANDROID_ABI=arm64-v8a \
-  -DANDROID_PLATFORM=android-23 \
+  -DANDROID_PLATFORM=android-28 \
   -DANDROID_SDK_ROOT=$ANDROID_SDK_ROOT \
   -DANDROID_NDK_ROOT=$ANDROID_NDK_ROOT
 
