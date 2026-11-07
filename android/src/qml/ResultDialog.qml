@@ -13,16 +13,16 @@ Item {
     signal again()
     signal rest()
 
-    Rectangle {
-        anchors.fill: parent
-        color: "#4D000000"
-    }
+    // 整窗遮罩由 main.qml 的 modalDim 统一绘制（弹窗本身只做缩放，避免遮罩被一起缩小）
+    property real uiScale: 1
 
     Item {
         id: panel
         width: 388
         height: 345
         anchors.centerIn: parent
+        scale: dialog.uiScale
+        transformOrigin: Item.Center
 
         Image {
             anchors.fill: parent

@@ -13,17 +13,16 @@ Item {
     signal accepted(int color)
     signal canceled()
 
-    // 桌面版弹窗打开时整窗 30% 黑遮罩
-    Rectangle {
-        anchors.fill: parent
-        color: "#4D000000"
-    }
+    // 整窗遮罩由 main.qml 的 modalDim 统一绘制（弹窗本身只做缩放，避免遮罩被一起缩小）
+    property real uiScale: 1
 
     Item {
         id: panel
         width: 386
         height: 234
         anchors.centerIn: parent
+        scale: dialog.uiScale
+        transformOrigin: Item.Center
 
         Image {
             anchors.fill: parent

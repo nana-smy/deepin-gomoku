@@ -12,6 +12,8 @@ Item {
     property string iconSource: ""
     property bool down: mouse.pressed
     property bool interactive: true
+    // 图标与文字相对贴图的放大倍数（竖屏手机像素密度高，需要更大的字）
+    property real uiScale: 1
 
     signal clicked()
 
@@ -25,8 +27,8 @@ Item {
     Image {
         x: parent.width * 0.147
         y: parent.height * 0.3125
-        width: 24
-        height: 24
+        width: 24 * btn.uiScale
+        height: 24 * btn.uiScale
         smooth: true
         source: btn.iconSource
     }
@@ -48,7 +50,7 @@ Item {
         color: btn.down ? "#FFDB9E" : "#024526"
         font.family: "Resource Han Rounded CN"
         font.weight: Font.Black
-        font.pixelSize: 22
+        font.pixelSize: 22 * btn.uiScale
     }
 
     MouseArea {
