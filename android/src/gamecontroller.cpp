@@ -60,6 +60,16 @@ int GameController::winner() const
     return m_winner;
 }
 
+bool GameController::started() const
+{
+    return m_started;
+}
+
+bool GameController::paused() const
+{
+    return m_paused;
+}
+
 int GameController::cell(int row, int col) const
 {
     if (!m_game)
@@ -87,9 +97,14 @@ void GameController::newGame(int color)
     m_gameStatus = 0;
     m_winner = 0;
     m_aiThinking = false;
+    m_paused = false;
+    m_hasPendingAI = false;
+    m_started = true;
     emit gameStatusChanged();
     emit winnerChanged();
     emit aiThinkingChanged(false);
+    emit pausedChanged();
+    emit startedChanged();
 
     m_game->startGame();
     emit boardChanged();
@@ -97,7 +112,7 @@ void GameController::newGame(int color)
 
 void GameController::userMove(int row, int col)
 {
-    if (m_gameStatus != 0 || !m_game || m_aiThinking)
+    if (!m_started || m_paused || m_gameStatus != 0 || !m_game || m_aiThinking)
         return;
     // 该位置已有棋子则不响应
     if (cell(row, col) != chess_none)
@@ -116,9 +131,12 @@ void GameController::resetGame()
     m_gameStatus = 0;
     m_winner = 0;
     m_aiThinking = false;
+    m_paused = false;
+    m_hasPendingAI = false;
     emit gameStatusChanged();
     emit winnerChanged();
     emit aiThinkingChanged(false);
+    emit pausedChanged();
     m_game->resetGame();
     emit boardChanged();
 }
@@ -128,21 +146,49 @@ void GameController::resetAll()
     m_gameStatus = 0;
     m_winner = 0;
     m_aiThinking = false;
+    m_paused = false;
+    m_hasPendingAI = false;
+    m_started = false;
     if (m_game)
         m_game->resetGame();
     emit gameStatusChanged();
     emit winnerChanged();
     emit aiThinkingChanged(false);
+    emit pausedChanged();
+    emit startedChanged();
     emit boardChanged();
+}
+
+void GameController::setPaused(bool paused)
+{
+    if (m_paused == paused)
+        return;
+    m_paused = paused;
+    emit pausedChanged();
+    // 暂停期间 AI 已算好落子：继续时补画并继续对局
+    if (!m_paused && m_hasPendingAI) {
+        Chess chess = m_pendingAI;
+        m_hasPendingAI = false;
+        applyAIMove(chess);
+    }
+}
+
+void GameController::applyAIMove(const Chess &chess)
+{
+    emit movePlayed(chess.x, chess.y, chess.color);
+    emit boardChanged();
+    m_game->chessCompleted(chess);
 }
 
 void GameController::onAIPlayChess(const Chess &chess)
 {
-    // AI 已算出落子位置：先通知 QML 绘制 + 播放音效
-    emit movePlayed(chess.x, chess.y, chess.color);
-    emit boardChanged();
-    // 再由核心记录该子并继续对局
-    m_game->chessCompleted(chess);
+    // 暂停状态下先记住落子，继续时再落子
+    if (m_paused) {
+        m_pendingAI = chess;
+        m_hasPendingAI = true;
+        return;
+    }
+    applyAIMove(chess);
 }
 
 void GameController::onIsAIPlaying(bool aiPlaying)

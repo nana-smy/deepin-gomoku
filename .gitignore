@@ -8,3 +8,6 @@ build/
 *.user.*
 .vscode/*
 *.directory
+
+# 构建期由 android/tools/make_ui_assets.py 从桌面 SVG 生成的界面素材（不提交二进制）
+android/assets/ui/

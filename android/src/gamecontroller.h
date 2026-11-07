@@ -20,6 +20,10 @@ class GameController : public QObject
     Q_PROPERTY(bool aiThinking READ aiThinking NOTIFY aiThinkingChanged)
     Q_PROPERTY(int gameStatus READ gameStatus NOTIFY gameStatusChanged)
     Q_PROPERTY(int winner READ winner NOTIFY winnerChanged)
+    // 是否已开局（对应桌面版“欢迎”/“开局”两种界面状态）
+    Q_PROPERTY(bool started READ started NOTIFY startedChanged)
+    // 是否暂停（对应桌面版开始/暂停按钮）
+    Q_PROPERTY(bool paused READ paused NOTIFY pausedChanged)
 
 public:
     explicit GameController(QObject *parent = nullptr);
@@ -34,6 +38,10 @@ public:
     int gameStatus() const;
     // 1=黑胜 2=白胜 3=平局 0=未结束
     int winner() const;
+    bool started() const;
+    bool paused() const;
+    // 暂停/继续（继续时若 AI 已算好落子，补画该子）
+    Q_INVOKABLE void setPaused(bool paused);
 
     // 供 QML 查询棋格颜色：0 空、1 黑、2 白
     Q_INVOKABLE int cell(int row, int col) const;
@@ -52,6 +60,8 @@ signals:
     void aiThinkingChanged(bool thinking);
     void gameStatusChanged();
     void winnerChanged();
+    void startedChanged();
+    void pausedChanged();
     // 棋盘状态变化（供 QML 重绘）
     void boardChanged();
     // 某方落下棋子（供音效/动效），color: 1黑 2白
@@ -69,6 +79,12 @@ private:
     int m_gameStatus; // 0 对局中 1 结束
     int m_winner;     // 0 无 1 黑 2 白 3 平
     bool m_aiThinking;
+    bool m_started = false;
+    bool m_paused = false;
+    // 暂停期间 AI 算出的落子先暂存，继续时再落到棋盘上
+    Chess m_pendingAI{-1, -1, 0};
+    bool m_hasPendingAI = false;
+    void applyAIMove(const Chess &chess);
 };
 
 #endif // GAMECONTROLLER_H

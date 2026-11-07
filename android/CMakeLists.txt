@@ -12,6 +12,9 @@ set(CMAKE_AUTORCC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Quick Gui Multimedia)
 
+# 界面素材：构建前由 tools/make_ui_assets.py 从桌面版 SVG 光栅化为 PNG
+file(GLOB UI_ASSETS "${CMAKE_CURRENT_SOURCE_DIR}/assets/ui/*.png")
+
 # QML 文件随 qrc 编译进应用，运行期由 QQmlApplicationEngine 加载，
 # 无需额外的 QML 预编译（qmlcachegen），从而不依赖宿主 Qt 工具链。
 qt_add_executable(deepin-gomoku
@@ -29,6 +32,15 @@ target_include_directories(deepin-gomoku PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/src/game
 )
+
+# 把光栅化后的界面素材以 /ui/<文件名> 的形式编进 qrc
+if(UI_ASSETS)
+    qt_add_resources(deepin-gomoku "ui_assets"
+        PREFIX "/ui"
+        BASE "${CMAKE_CURRENT_SOURCE_DIR}/assets/ui"
+        FILES ${UI_ASSETS}
+    )
+endif()
 
 target_link_libraries(deepin-gomoku PRIVATE
     Qt6::Quick

@@ -80,6 +80,16 @@ jobs:
       - name: Generate launcher icons
         run: python3 android/tools/make_launcher_icons.py
 
+      # 界面素材：优先用 PySide6 的 QSvgRenderer（与桌面版同一条渲染路径）把桌面 SVG
+      # 光栅化为 PNG；安装失败时脚本会退回 resvg/librsvg，不会中断构建。
+      - name: Install SVG rendering deps
+        run: |
+          pip install --quiet "PySide6-Essentials==6.8.3" || echo "PySide6 unavailable, fallback to resvg"
+          pip install --quiet resvg-py || true
+
+      - name: Generate UI assets
+        run: python3 android/tools/make_ui_assets.py
+
       - name: Configure (CMake)
         run: |
           qt-cmake -S android -B build -DCMAKE_BUILD_TYPE=Release -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-28 -DANDROID_SDK_ROOT="$ANDROID_SDK_ROOT" -DANDROID_NDK_ROOT="$ANDROID_NDK_ROOT"
