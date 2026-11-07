@@ -2,8 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.deepin.gomoku"
     android:installLocation="auto"
-    android:versionCode="120"
-    android:versionName="1.2.2">
+    android:versionCode="121"
+    android:versionName="1.2.3">
 
     <!-- Qt 6.8 要求 minSdkVersion >= 28（Android 9） -->
     <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="33" />
@@ -17,6 +17,8 @@
     <application
         android:name="org.qtproject.qt.android.bindings.QtApplication"
         android:label="Gomoku"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:hardwareAccelerated="true"
         android:allowBackup="false">
 
