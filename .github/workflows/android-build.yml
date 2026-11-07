@@ -1,11 +1,11 @@
-# deepin-gomoku —— Android APK 自动构建与发布
+# deepin-gomoku —— Android APK 自动构建、签名与发布
 #
 # 触发时机：
 #   - push / PR 修改 android/ 目录或本工作流文件时
 #   - 推送 v* 标签时（发布对应版本）
 #   - 手动触发（Actions 页面 → Run workflow）
 #
-# 产物：arm64-v8a 的 release APK。
+# 产物：arm64-v8a 的 release APK，构建后用 apksigner 签名。
 #   - 每次构建作为 Actions artifact 上传；
 #   - 推送到 master 后自动发布到 Releases（tag android-latest，每次覆盖）；
 #   - 推送 v* 标签时发布对应版本的 Release。
@@ -87,11 +87,27 @@ jobs:
       - name: Build APK
         run: cmake --build build --target apk --parallel 4
 
-      - name: Upload APK artifact
+      # Qt/gradle 产出的是未签名包，这里用仓库内固定密钥签名，保证各版本签名一致、可覆盖升级
+      - name: Sign APK (zipalign + apksigner)
+        run: |
+          set -e
+          BT="$ANDROID_SDK_ROOT/build-tools/33.0.1"
+          mkdir -p dist
+          base64 -d android/signing/deepin-gomoku.keystore.b64 > "$RUNNER_TEMP/release.keystore"
+          UNSIGNED=$(find build/android-build -path '*release*' -name '*.apk' | head -1)
+          if [ -z "$UNSIGNED" ]; then UNSIGNED=$(find build/android-build -name '*.apk' | head -1); fi
+          if [ -z "$UNSIGNED" ]; then echo "::error::APK not found"; exit 1; fi
+          echo "unsigned apk: $UNSIGNED"
+          "$BT/zipalign" -f -p 4 "$UNSIGNED" "$RUNNER_TEMP/aligned.apk"
+          "$BT/apksigner" sign --ks "$RUNNER_TEMP/release.keystore" --ks-pass pass:gomoku-signing-2024 --key-pass pass:gomoku-signing-2024 --out dist/deepin-gomoku-signed.apk "$RUNNER_TEMP/aligned.apk"
+          "$BT/apksigner" verify --print-certs dist/deepin-gomoku-signed.apk
+          ls -l dist
+
+      - name: Upload signed APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: deepin-gomoku-android-arm64
-          path: build/android-build/**/*.apk
+          path: dist/*.apk
           if-no-files-found: error
 
   # 自动发布：构建成功后直接把 APK 传到 GitHub Releases
@@ -116,8 +132,8 @@ jobs:
       - name: Prepare release files
         run: |
           VERSION=$(awk -F'"' '/android:versionName/ {print $2}' android/android/AndroidManifest.xml)
-          APK=$(find dist -name '*.apk' | head -1)
-          cp "$APK" "dist/deepin-gomoku-${VERSION}-arm64.apk"
+          cp dist/deepin-gomoku-signed.apk "dist/deepin-gomoku-${VERSION}-arm64.apk"
+          rm -f dist/deepin-gomoku-signed.apk
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           ls -l dist
 
@@ -162,6 +178,7 @@ jobs:
             - 包名：org.deepin.gomoku
             - 最低系统：Android 9.0（API 28）
             - 版本：${{ env.VERSION }}
+            - 签名：已签名（自签名证书），可直接安装
 
             安装：下载下方 APK 直接安装即可（允许安装未知来源应用）。
             每次 master 构建都会覆盖 android-latest 发布；推送 v* 标签则生成对应版本。
