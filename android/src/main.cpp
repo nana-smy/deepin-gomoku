@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
 
     app.setOrganizationName("deepin");
     app.setApplicationName("deepin-gomoku");
-    app.setApplicationVersion("1.2.4");
+    app.setApplicationVersion("1.2.5");
 
     // 加载内置圆角中文字体（与桌面版一致），避免安卓系统字体不一致
     const int fontId = QFontDatabase::addApplicationFont(":/resources/font/ResourceHanRoundedCN-Bold.ttf");

@@ -11,6 +11,12 @@ Item {
 
     readonly property int side: 200 // 对局中的布局基准高度
 
+    // 当前思考方 / 另一方的棋子颜色（1 黑 2 白）
+    readonly property int aiColorProp: controller && controller.userColor === 1 ? 2 : 1
+    readonly property int curColor: !controller ? 1
+            : (controller.aiThinking ? aiColorProp : controller.userColor)
+    readonly property int othColor: curColor === 1 ? 2 : 1
+
     // 欢迎语：rectY + 59，字号 30
     Text {
         visible: !(controller && controller.started)
@@ -63,10 +69,7 @@ Item {
         x: parent.width * 0.3920
         y: side * 0.79
         width: 40; height: 40
-        source: (controller && ((controller.aiThinking && root.aiColor === 1)
-                 || (!controller.aiThinking && controller.userColor === 1)))
-                ? "qrc:/ui/badge_black.png"
-                : "qrc:/ui/badge_white.png"
+        source: panel.curColor === 1 ? "qrc:/ui/badge_black.png" : "qrc:/ui/badge_white.png"
     }
 
     // 另一方
@@ -92,9 +95,6 @@ Item {
         x: parent.width * 0.7278
         y: side * 0.79
         width: 40; height: 40
-        source: (controller && ((controller.aiThinking && root.aiColor === 2)
-                 || (!controller.aiThinking && controller.userColor === 2)))
-                ? "qrc:/ui/badge_white.png"
-                : "qrc:/ui/badge_black.png"
+        source: panel.othColor === 1 ? "qrc:/ui/badge_black.png" : "qrc:/ui/badge_white.png"
     }
 }

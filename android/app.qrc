@@ -3,6 +3,7 @@
         <file alias="qml/main.qml">src/qml/main.qml</file>
         <file alias="qml/GameBoard.qml">src/qml/GameBoard.qml</file>
         <file alias="qml/PlayingPanel.qml">src/qml/PlayingPanel.qml</file>
+        <file alias="qml/PortraitPanel.qml">src/qml/PortraitPanel.qml</file>
         <file alias="qml/FunctionButton.qml">src/qml/FunctionButton.qml</file>
         <file alias="qml/SelectColorDialog.qml">src/qml/SelectColorDialog.qml</file>
         <file alias="qml/ResultDialog.qml">src/qml/ResultDialog.qml</file>

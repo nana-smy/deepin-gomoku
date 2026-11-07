@@ -4,8 +4,12 @@ import QtMultimedia
 import "Metrics.js" as M
 
 // deepin-gomoku Android 版主界面。
-// 视觉完全对齐桌面版：1024x718 的逻辑画布（原窗口 1024x768 去掉 50px 标题栏），
+// 设计基准完全对齐桌面版：1024x718 的逻辑画布（原窗口 1024x768 去掉 50px 标题栏），
 // 背景 #4C9394→#387D7E 竖向渐变，左侧木棋盘，右侧对局详情，右下三个功能按钮。
+//
+// 横屏：整块 1024x718 画布等比缩放居中，与桌面版逐像素一致。
+// 竖屏：同一套素材与尺寸，改为“顶部对局信息 + 中间放大棋盘 + 底部三按钮”的自适应排布，
+//       棋盘按宽度等比放大，棋子尺寸/线距同比例缩放，观感与桌面版保持一致。
 Window {
     id: root
     visible: true
@@ -16,10 +20,44 @@ Window {
 
     visibility: Qt.platform.os === "android" ? Window.FullScreen : Window.AutomaticVisibility
 
+    // 竖屏判定：高度明显大于宽度（兼容 16:9 / 19.5:9 / 全面屏）
+    readonly property bool portrait: height > width * 1.15
+    // 横屏按整窗等比适配；竖屏按宽度适配、纵向自适应
+    readonly property real landscapeScale: Math.min(width / M.W, height / M.H)
+    readonly property real portraitScale: width / M.W
+
     readonly property int aiColor: controller ? (controller.userColor === 1 ? 2 : 1) : 2
     property bool soundOn: true
     property bool resultVisible: false
     property bool resultWin: false
+
+    // 棋子的唯一数据源：横竖屏共用，旋转屏幕不会丢子
+    ListModel { id: pieceModel }
+
+    function placePiece(row, col, color) {
+        pieceModel.append({"row": row, "col": col, "color": color})
+    }
+    function clearPieces() {
+        pieceModel.clear()
+    }
+
+    // 开始/暂停共用逻辑（两种方向同一套行为）
+    function handleStartPause() {
+        if (!controller)
+            return
+        if (!controller.started || controller.gameStatus === 1) {
+            root.resultVisible = false
+            controller.resetAll()
+            selectDialog.selectedColor = controller.userColor
+            selectDialog.visible = true
+        } else {
+            controller.setPaused(!controller.paused)
+        }
+    }
+
+    readonly property bool boardInteractive: controller
+            ? (controller.started && !controller.paused
+               && controller.gameStatus === 0 && !controller.aiThinking) : false
 
     // 整窗背景（桌面版 drawBackground 绘制 background.svg，1024x768 竖向渐变）
     Rectangle {
@@ -43,21 +81,21 @@ Window {
         source: "qrc:/resources/music/fail.wav"
     }
 
-    // 逻辑画布：按屏幕等比缩放并居中
+    // ---------------------------------------------------------------- 横屏
     Item {
-        id: stage
+        id: landscapeView
         width: M.W
         height: M.H
         anchors.centerIn: parent
-        scale: Math.min(root.width / M.W, root.height / M.H)
+        visible: !root.portrait
+        scale: root.landscapeScale
         transformOrigin: Item.Center
 
         GameBoard {
-            id: board
             x: M.BOARD_X
             y: M.BOARD_Y
-            interactive: controller ? (controller.started && !controller.paused
-                                       && controller.gameStatus === 0 && !controller.aiThinking) : false
+            sourceModel: pieceModel
+            interactive: root.boardInteractive
         }
 
         PlayingPanel {
@@ -75,18 +113,7 @@ Window {
             label: idleState ? qsTr("开 始")
                              : (controller.paused ? qsTr("继 续") : qsTr("暂 停"))
             iconSource: idleState ? "qrc:/ui/ico_start.png" : "qrc:/ui/ico_pause.png"
-            onClicked: {
-                if (!controller)
-                    return
-                if (idleState) {
-                    root.resultVisible = false
-                    controller.resetAll()
-                    selectDialog.selectedColor = controller.userColor
-                    selectDialog.visible = true
-                } else {
-                    controller.setPaused(!controller.paused)
-                }
-            }
+            onClicked: root.handleStartPause()
         }
 
         // 重玩
@@ -95,11 +122,7 @@ Window {
             y: controller && controller.started ? M.BTN_REPLAY_GAME : M.BTN_REPLAY_IDLE
             label: qsTr("重 玩")
             iconSource: "qrc:/ui/ico_replay.png"
-            onClicked: {
-                if (!controller)
-                    return
-                replayDialog.visible = true
-            }
+            onClicked: replayDialog.visible = true
         }
 
         // 音效
@@ -110,61 +133,136 @@ Window {
             iconSource: root.soundOn ? "qrc:/ui/ico_sound_on.png" : "qrc:/ui/ico_sound_off.png"
             onClicked: root.soundOn = !root.soundOn
         }
+    }
 
-        SelectColorDialog {
-            id: selectDialog
-            objectName: "selectDialog"
-            onAccepted: (color) => {
-                visible = false
-                if (controller)
-                    controller.newGame(color)
-            }
-            onCanceled: visible = false
+    // ---------------------------------------------------------------- 竖屏
+    Item {
+        id: portraitView
+        // 逻辑宽度固定 1024，高度取屏幕实际高度换算，整体按宽度缩放
+        width: M.W
+        height: root.height / root.portraitScale
+        visible: root.portrait
+        scale: root.portraitScale
+        transformOrigin: Item.TopLeft
+
+        // 顶部预留状态栏/摄像头挖孔区域
+        readonly property real topInset: 40
+        readonly property real panelY: topInset + 16
+        readonly property real panelH: 230
+        readonly property real btnY: height - 130
+        readonly property real availTop: panelY + panelH + 50
+        readonly property real availBottom: btnY - 40
+        // 棋盘按宽度铺满（左右各留 16），纵向空间不足时自动缩小
+        readonly property real bSize: Math.max(320, Math.min(M.W - 32,
+                                                             availBottom - availTop))
+
+        PortraitPanel {
+            x: 0
+            y: portraitView.panelY
+            height: portraitView.panelH
         }
 
-        ResultDialog {
-            id: resultDialog
-            objectName: "resultDialog"
-            visible: root.resultVisible
-            win: root.resultWin
-            onRest: root.resultVisible = false
-            onAgain: {
-                root.resultVisible = false
-                if (controller) {
-                    controller.resetAll()
-                    selectDialog.selectedColor = controller.userColor
-                    selectDialog.visible = true
-                }
-            }
+        GameBoard {
+            x: (M.W - portraitView.bSize) / 2
+            y: portraitView.availTop + (portraitView.availBottom - portraitView.availTop
+                                        - portraitView.bSize) / 2
+            boardSize: portraitView.bSize
+            sourceModel: pieceModel
+            interactive: root.boardInteractive
         }
 
-        ExitDialog {
-            id: exitDialog
-            objectName: "exitDialog"
-            message: qsTr("游戏正在进行中，确定退出吗？")
-            confirmText: qsTr("退 出")
-            onConfirmed: {
-                visible = false
-                Qt.quit()
-            }
-            onCanceled: visible = false
+        // 三个功能按钮横排（竖屏整体放大 1.4 倍，更贴合手指点击）
+        readonly property real btnScale: 1.4
+        FunctionButton {
+            x: 43
+            y: portraitView.btnY
+            scale: portraitView.btnScale
+            transformOrigin: Item.TopLeft
+            readonly property bool idleState: !controller || !controller.started
+                    || controller.gameStatus === 1
+            label: idleState ? qsTr("开 始")
+                             : (controller.paused ? qsTr("继 续") : qsTr("暂 停"))
+            iconSource: idleState ? "qrc:/ui/ico_start.png" : "qrc:/ui/ico_pause.png"
+            onClicked: root.handleStartPause()
         }
+        FunctionButton {
+            x: 369
+            y: portraitView.btnY
+            scale: portraitView.btnScale
+            transformOrigin: Item.TopLeft
+            label: qsTr("重 玩")
+            iconSource: "qrc:/ui/ico_replay.png"
+            onClicked: replayDialog.visible = true
+        }
+        FunctionButton {
+            x: 695
+            y: portraitView.btnY
+            scale: portraitView.btnScale
+            transformOrigin: Item.TopLeft
+            label: root.soundOn ? qsTr("关闭音效") : qsTr("开启音效")
+            iconSource: root.soundOn ? "qrc:/ui/ico_sound_on.png" : "qrc:/ui/ico_sound_off.png"
+            onClicked: root.soundOn = !root.soundOn
+        }
+    }
 
-        ExitDialog {
-            id: replayDialog
-            objectName: "replayDialog"
-            message: qsTr("确定要重新开始吗？")
-            confirmText: qsTr("重 玩")
-            onConfirmed: {
-                visible = false
-                if (controller) {
-                    controller.resetAll()
-                    selectDialog.selectedColor = controller.userColor
-                    selectDialog.visible = true
-                }
-            }
-            onCanceled: visible = false
+    // ---------------------------------------------------------------- 弹窗
+    SelectColorDialog {
+        id: selectDialog
+        objectName: "selectDialog"
+        scale: root.portrait ? Math.min(root.width / 900, 1.3) : 1
+        onAccepted: (color) => {
+            visible = false
+            if (controller)
+                controller.newGame(color)
         }
+        onCanceled: visible = false
+    }
+
+    ResultDialog {
+        id: resultDialog
+        objectName: "resultDialog"
+        scale: root.portrait ? Math.min(root.width / 900, 1.3) : 1
+        visible: root.resultVisible
+        win: root.resultWin
+        onRest: root.resultVisible = false
+        onAgain: {
+            root.resultVisible = false
+            if (controller) {
+                controller.resetAll()
+                selectDialog.selectedColor = controller.userColor
+                selectDialog.visible = true
+            }
+        }
+    }
+
+    ExitDialog {
+        id: exitDialog
+        objectName: "exitDialog"
+        scale: root.portrait ? Math.min(root.width / 900, 1.3) : 1
+        message: qsTr("游戏正在进行中，确定退出吗？")
+        confirmText: qsTr("退 出")
+        onConfirmed: {
+            visible = false
+            Qt.quit()
+        }
+        onCanceled: visible = false
+    }
+
+    ExitDialog {
+        id: replayDialog
+        objectName: "replayDialog"
+        scale: root.portrait ? Math.min(root.width / 900, 1.3) : 1
+        message: qsTr("确定要重新开始吗？")
+        confirmText: qsTr("重 玩")
+        onConfirmed: {
+            visible = false
+            if (controller) {
+                controller.resetAll()
+                selectDialog.selectedColor = controller.userColor
+                selectDialog.visible = true
+            }
+        }
+        onCanceled: visible = false
     }
 
     // 安卓返回键：对局中先弹桌面版同款“确定退出吗”弹窗
@@ -192,13 +290,13 @@ Window {
     Connections {
         target: controller
         function onMovePlayed(row, col, color) {
-            board.place(row, col, color)
+            root.placePiece(row, col, color)
             if (root.soundOn && chessSound)
                 chessSound.play()
         }
         function onStartedChanged() {
             if (controller.started)
-                board.clear()
+                root.clearPieces()
         }
         function onGameStatusChanged() {
             if (!controller || controller.gameStatus !== 1)
