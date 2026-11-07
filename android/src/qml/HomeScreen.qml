@@ -21,7 +21,7 @@ Item {
             text: qsTr("Gomoku")
             font.pixelSize: 20
             color: "#b9aa87"
-            letterSpacing: 6
+            font.letterSpacing: 6
         }
 
         Item { width: 1; height: 48 }
