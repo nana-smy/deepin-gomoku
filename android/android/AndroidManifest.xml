@@ -2,8 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.deepin.gomoku"
     android:installLocation="auto"
-    android:versionCode="123"
-    android:versionName="1.2.5">
+    android:versionCode="124"
+    android:versionName="1.2.6">
 
     <!-- Qt 6.8 要求 minSdkVersion >= 28（Android 9） -->
     <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="33" />
