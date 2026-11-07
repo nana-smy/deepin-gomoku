@@ -124,7 +124,7 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.margins: 8
-        controller: controller
+        game: controller
         onTapped: function (row, col) {
             if (controller)
                 controller.userMove(row, col)
