@@ -13,7 +13,7 @@ SRC = os.path.join(REPO, "gomoku/assets/resources/desktop/com.deepin.gomoku.svg"
 RES = os.path.join(REPO, "android", "android", "res")
 
 CANVAS, ART = 108, 64
-SCALE = CANVAS * 0.86 / ART
+SCALE = CANVAS * 0.785 / ART
 OFFSET = (CANVAS - ART * SCALE) / 2
 
 ADAPTIVE = """<?xml version="1.0" encoding="utf-8"?>
