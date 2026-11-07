@@ -1,17 +1,21 @@
-# deepin-gomoku —— Android APK 自动构建
+# deepin-gomoku —— Android APK 自动构建与发布
 #
 # 触发时机：
 #   - push / PR 修改 android/ 目录或本工作流文件时
+#   - 推送 v* 标签时（发布对应版本）
 #   - 手动触发（Actions 页面 → Run workflow）
 #
-# 构建产物：arm64-v8a 的 debug APK，作为 Actions artifact 上传，可直接下载安装。
-# 如需发布 Release，可在 Actions 页面以 Release 模式手动触发或扩展本工作流。
+# 产物：arm64-v8a 的 release APK。
+#   - 每次构建作为 Actions artifact 上传；
+#   - 推送到 master 后自动发布到 Releases（tag android-latest，每次覆盖）；
+#   - 推送 v* 标签时发布对应版本的 Release。
 
 name: Build Android APK
 
 on:
   push:
     branches: [ master ]
+    tags: [ 'v*' ]
     paths:
       - 'android/**'
       - '.github/workflows/android-build.yml'
@@ -89,3 +93,57 @@ jobs:
           name: deepin-gomoku-android-arm64
           path: build/android-build/**/*.apk
           if-no-files-found: error
+
+  # 自动发布：构建成功后直接把 APK 传到 GitHub Releases
+  publish:
+    name: Publish release
+    needs: build
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download APK
+        uses: actions/download-artifact@v4
+        with:
+          name: deepin-gomoku-android-arm64
+          path: dist
+
+      - name: Prepare release files
+        run: |
+          VERSION=$(awk -F'"' '/android:versionName/ {print $2}' android/android/AndroidManifest.xml)
+          APK=$(find dist -name '*.apk' | head -1)
+          cp "$APK" "dist/deepin-gomoku-${VERSION}-arm64.apk"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          ls -l dist
+
+      - name: Resolve release tag
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "TAG=${{ github.ref_name }}" >> "$GITHUB_ENV"
+          else
+            echo "TAG=android-latest" >> "$GITHUB_ENV"
+          fi
+
+      - name: Publish to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          name: deepin-gomoku Android ${{ env.VERSION }}
+          body: |
+            deepin-gomoku 的 Android 移植版，由 GitHub Actions 自动构建发布。
+
+            - 架构：arm64-v8a
+            - 包名：org.deepin.gomoku
+            - 最低系统：Android 9.0（API 28）
+            - 版本：${{ env.VERSION }}
+
+            安装：下载下方 APK 直接安装即可（允许安装未知来源应用）。
+            每次 master 构建都会覆盖 android-latest 发布；推送 v* 标签则生成对应版本。
+          files: dist/*.apk
+          prerelease: false
+          make_latest: true
