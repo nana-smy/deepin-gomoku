@@ -6,7 +6,8 @@ Canvas {
 
     // 与核心逻辑中的常量保持一致
     readonly property int lineNum: 15
-    property var controller: null
+    // 注意：不能命名为 controller，否则会遮蔽同名的上下文属性（自绑定为 null）
+    property var game: null
     signal tapped(int row, int col)
 
     onWidthChanged: requestPaint()
@@ -14,7 +15,7 @@ Canvas {
 
     // 棋盘状态变化时重绘
     Connections {
-        target: board.controller
+        target: board.game
         function onBoardChanged() { board.requestPaint() }
     }
 
@@ -25,6 +26,22 @@ Canvas {
         return { side: side, margin: margin, cell: cell }
     }
 
+    // Qt Canvas 2D 没有 roundRect，手写圆角矩形路径
+    function roundedRectPath(ctx, x, y, w, h, r) {
+        r = Math.min(r, Math.min(w, h) / 2)
+        ctx.beginPath()
+        ctx.moveTo(x + r, y)
+        ctx.lineTo(x + w - r, y)
+        ctx.arc(x + w - r, y + r, r, -Math.PI / 2, 0)
+        ctx.lineTo(x + w, y + h - r)
+        ctx.arc(x + w - r, y + h - r, r, 0, Math.PI / 2)
+        ctx.lineTo(x + r, y + h)
+        ctx.arc(x + r, y + h - r, r, Math.PI / 2, Math.PI)
+        ctx.lineTo(x, y + r)
+        ctx.arc(x + r, y + r, r, Math.PI, Math.PI * 1.5)
+        ctx.closePath()
+    }
+
     onPaint: {
         var ctx = getContext("2d")
         var g = geometry()
@@ -33,9 +50,9 @@ Canvas {
         ctx.clearRect(0, 0, width, height)
 
         // 棋盘木质底板（圆角）
+        // 注意：Qt Canvas 2D 不支持 HTML5 的 roundRect，这里手写圆角路径
         ctx.save()
-        ctx.beginPath()
-        ctx.roundRect(margin - 6, margin - 6, side + 12, side + 12, 12)
+        roundedRectPath(ctx, margin - 6, margin - 6, side + 12, side + 12, 12)
         var grd = ctx.createLinearGradient(margin, margin, margin + side, margin + side)
         grd.addColorStop(0, "#e2b27a")
         grd.addColorStop(1, "#c58f54")
@@ -69,10 +86,10 @@ Canvas {
         }
 
         // 棋子
-        if (!controller) return
+        if (!game) return
         for (var r = 0; r < lineNum; r++) {
             for (var c = 0; c < lineNum; c++) {
-                var color = controller.cell(r, c)
+                var color = game.cell(r, c)
                 if (color !== 0) {
                     drawPiece(ctx, margin + c * cell, margin + r * cell, color, cell)
                 }
