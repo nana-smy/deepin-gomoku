@@ -68,7 +68,7 @@ jobs:
           dir: '${{ runner.temp }}'
           cache: 'true'
 
-      # 启动图标由仓库自带的 SVG 光栅化生成（二进制 PNG 无法以文本提交）
+      # 启动图标由仓库自带的 SVG 光栅化生成（PNG 无法以文本提交）
       - name: Install SVG rasterizer
         run: |
           if command -v rsvg-convert >/dev/null 2>&1; then
@@ -129,6 +129,18 @@ jobs:
             echo "TAG=android-latest" >> "$GITHUB_ENV"
           fi
 
+      - name: Clean stale APK assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$TAG" --json assets -q '.assets[].name' 2>/dev/null | while read -r name; do
+            [ -z "$name" ] && continue
+            case "$name" in
+              deepin-gomoku-${VERSION}-arm64.apk) ;;
+              *.apk) echo "removing stale asset: $name"; gh release delete-asset "$TAG" "$name" --yes || true ;;
+            esac
+          done
+
       - name: Publish to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
@@ -144,6 +156,6 @@ jobs:
 
             安装：下载下方 APK 直接安装即可（允许安装未知来源应用）。
             每次 master 构建都会覆盖 android-latest 发布；推送 v* 标签则生成对应版本。
-          files: dist/*.apk
+          files: dist/deepin-gomoku-${{ env.VERSION }}-arm64.apk
           prerelease: false
           make_latest: true
