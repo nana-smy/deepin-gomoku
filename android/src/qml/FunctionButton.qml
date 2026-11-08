@@ -12,7 +12,7 @@ Item {
     property string iconSource: ""
     property bool down: mouse.pressed
     property bool interactive: true
-    // 图标与文字相对贴图的放大倍数（竖屏手机像素密度高，需要更大的字）
+    // 图标与文字相对贴图的局部放大倍数（默认为 1，即与桌面版比例一致）
     property real uiScale: 1
 
     signal clicked()
@@ -41,7 +41,8 @@ Item {
 
     Text {
         id: labelText
-        x: parent.width * 0.372
+        // 桌面比例为 0.372w；仅当 uiScale>1（图标被局部放大）时为避免压到图标而右移
+        x: parent.width * 0.372 + (btn.uiScale > 1 ? 24 * (btn.uiScale - 1) + 10 : 0)
         // 桌面版用画文字的基线定位（QPainter::drawText(QPointF)）
         y: parent.height * 0.646 - metrics.ascent
         width: parent.width - x - 8

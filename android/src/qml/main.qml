@@ -158,8 +158,8 @@ Window {
         // 顶部预留状态栏/摄像头挖孔区域
         readonly property real topInset: 40
         readonly property real panelY: topInset + 16
-        readonly property real panelH: 240
-        readonly property real btnY: height - 150
+        readonly property real panelH: 290
+        readonly property real btnY: height - 160
         readonly property real availTop: panelY + panelH + 30
         readonly property real availBottom: btnY - 40
         // 棋盘按宽度铺满（左右各留 16），纵向空间不足时自动缩小
@@ -182,12 +182,11 @@ Window {
         }
 
         // 三个功能按钮横排（竖屏整体放大，更贴合手指点击）
-        readonly property real btnScale: 1.5
+        readonly property real btnScale: 1.55
         FunctionButton {
-            x: 26
+            x: 20
             y: portraitView.btnY
             scale: portraitView.btnScale
-            uiScale: 1.25
             transformOrigin: Item.TopLeft
             readonly property bool idleState: !controller || !controller.started
                     || controller.gameStatus === 1
@@ -197,20 +196,18 @@ Window {
             onClicked: root.handleStartPause()
         }
         FunctionButton {
-            x: 359
+            x: 354
             y: portraitView.btnY
             scale: portraitView.btnScale
-            uiScale: 1.25
             transformOrigin: Item.TopLeft
             label: qsTr("重 玩")
             iconSource: "qrc:/ui/ico_replay.png"
             onClicked: replayDialog.visible = true
         }
         FunctionButton {
-            x: 692
+            x: 688
             y: portraitView.btnY
             scale: portraitView.btnScale
-            uiScale: 1.25
             transformOrigin: Item.TopLeft
             label: root.soundOn ? qsTr("关闭音效") : qsTr("开启音效")
             iconSource: root.soundOn ? "qrc:/ui/ico_sound_on.png" : "qrc:/ui/ico_sound_off.png"
@@ -222,7 +219,7 @@ Window {
     SelectColorDialog {
         id: selectDialog
         objectName: "selectDialog"
-        uiScale: root.portrait ? Math.min(root.width / 640, 1.8) : 1
+        uiScale: root.portrait ? Math.min(root.width / 560, 2.1) : 1
         onAccepted: (color) => {
             visible = false
             if (controller)
@@ -234,7 +231,7 @@ Window {
     ResultDialog {
         id: resultDialog
         objectName: "resultDialog"
-        uiScale: root.portrait ? Math.min(root.width / 640, 1.8) : 1
+        uiScale: root.portrait ? Math.min(root.width / 560, 2.1) : 1
         visible: root.resultVisible
         win: root.resultWin
         onRest: root.resultVisible = false
@@ -251,7 +248,7 @@ Window {
     ExitDialog {
         id: exitDialog
         objectName: "exitDialog"
-        uiScale: root.portrait ? Math.min(root.width / 640, 1.8) : 1
+        uiScale: root.portrait ? Math.min(root.width / 560, 2.1) : 1
         message: qsTr("游戏正在进行中，确定退出吗？")
         confirmText: qsTr("退 出")
         onConfirmed: {
@@ -264,7 +261,7 @@ Window {
     ExitDialog {
         id: replayDialog
         objectName: "replayDialog"
-        uiScale: root.portrait ? Math.min(root.width / 640, 1.8) : 1
+        uiScale: root.portrait ? Math.min(root.width / 560, 2.1) : 1
         message: qsTr("确定要重新开始吗？")
         confirmText: qsTr("重 玩")
         onConfirmed: {

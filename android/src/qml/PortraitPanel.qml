@@ -6,7 +6,7 @@ import QtQuick
 Item {
     id: panel
     width: 1024
-    height: 240
+    height: 290
 
     readonly property int aiColor: controller ? (controller.userColor === 1 ? 2 : 1) : 2
     // 当前思考方：AI 思考时是 AI，否则是玩家
@@ -14,7 +14,7 @@ Item {
             : (controller.aiThinking ? aiColor : controller.userColor)
     readonly property int othColor: curColor === 1 ? 2 : 1
     // 头像/棋子组的整体放大倍数
-    readonly property real uiScale: 1.6
+    readonly property real uiScale: 1.95
 
     // 未开局：欢迎语
     Text {
@@ -26,14 +26,14 @@ Item {
         color: "#FFDB9E"
         font.family: "Resource Han Rounded CN"
         font.weight: Font.Black
-        font.pixelSize: 40
+        font.pixelSize: 56
     }
 
     // 对局中的提示语
     Text {
         visible: controller && controller.started
         width: parent.width
-        y: 6
+        y: 10
         horizontalAlignment: Text.AlignHCenter
         text: controller && controller.gameStatus === 1
               ? qsTr("游戏结束！")
@@ -43,7 +43,7 @@ Item {
         color: "#FFDB9E"
         font.family: "Resource Han Rounded CN"
         font.weight: Font.Black
-        font.pixelSize: 42
+        font.pixelSize: 56
     }
 
     // 双方头像 + 棋子颜色：保持桌面版 300x200 面板内的相对比例，整体放大
@@ -52,7 +52,8 @@ Item {
         width: 355
         height: 94
         anchors.horizontalCenter: parent.horizontalCenter
-        y: 84
+        // 以中心缩放，因此 y 按放大后的实际高度反推，避免顶部压到提示语
+        y: 135
         scale: panel.uiScale
         transformOrigin: Item.Center
 
